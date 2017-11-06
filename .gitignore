@@ -1,1 +1,8 @@
 .ipynb_checkpoints/
+
+# Mr. Developer
+.idea/
+
+# Mr. Virtualenv
+.venv
+.env/

@@ -1,0 +1,90 @@
+
+%matplotlib inline
+
+# Do below if you want interactive matplotlib plot ()
+# %matplotlib notebook 
+
+# https://ipython.org/ipython-doc/dev/config/extensions/autoreload.html
+%load_ext autoreload
+%autoreload 2
+
+# %install_ext http://raw.github.com/jrjohansson/version_information/master/version_information.py
+%load_ext version_information
+%version_information numpy, scipy, matplotlib, pandas;
+
+# standard library
+
+# thirdparty library
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from scipy import stats
+
+# local imports
+
+# customizations
+sns.set()  # matplotlib defaults
+
+# see value of statements at once
+from IPython.core.interactiveshell import InteractiveShell
+InteractiveShell.ast_node_interactivity = "all"
+
+# any tweaks that normally go in .matplotlibrc, etc., should explicitly go here
+plt.rcParams['figure.figsize'] = (12, 8)
+%config InlineBackend.figure_format = 'retina'
+
+# global variables
+
+passengers = pd.read_csv('./data/titanic-data.csv')
+
+passengers.head()
+
+passengers.info()
+
+passengers.groupby('Survived').Survived.count()
+
+pies = passengers.groupby(['Survived', 'Sex']).Survived.count().unstack().plot.pie(subplots=True);
+[p.axis('equal') for p in pies];
+
+passengers.groupby('Sex').Survived.mean()
+
+frequency_table = pd.crosstab(passengers.Survived, passengers.Sex); frequency_table
+
+chi2,pval,dof,expected = stats.chi2_contingency(frequency_table)
+print 'Chi2 test statistic: {}'.format(chi2)
+print 'p-value: {}'.format(pval)
+
+survivors_age = passengers[passengers.Survived == 1].Age.dropna()
+
+survivors_age = np.ceil(survivors_age)
+
+survivors_age.describe()
+
+passengers_age = np.ceil(passengers.Age.dropna())
+passengers_age.hist(bins=40);
+survivors_age.hist(bins=40);
+plt.xlabel('Age');
+plt.ylabel('Number of Person');
+plt.legend(['all', 'survivor']);
+
+def child(index):
+    if index <= 12:
+        return 'child'
+    else:
+        return 'adult'
+survivors_age.apply(child).value_counts() / passengers_age.apply(child).value_counts()
+
+crosstab = pd.crosstab(passengers.Survived, passengers_age.apply(child));crosstab
+
+chi2,pval,dof,expected = stats.chi2_contingency(crosstab)
+print 'p-value: {}'.format(pval)
+
+passengers.groupby(['Pclass', 'Survived']).Survived.count().unstack().plot.bar();
+plt.ylabel('Count of Passengers');
+
+female_child_fq = passengers[(passengers.Sex == 'female') | (passengers.Age <= 12)].groupby(['Pclass', 'Survived']).Survived.count().unstack()
+female_child_fq
+
+chi2,pval,dof,expected = stats.chi2_contingency(female_child_fq)
+print 'P-value: {}'.format(pval)
