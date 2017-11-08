@@ -41,7 +41,7 @@ sns.set()  # matplotlib defaults
 
 # see value of statements at once
 from IPython.core.interactiveshell import InteractiveShell
-InteractiveShell.ast_node_interactivity = "all"
+# InteractiveShell.ast_node_interactivity = "all"
 
 # any tweaks that normally go in .matplotlibrc, etc., should explicitly go here
 plt.rcParams['figure.figsize'] = (12, 8)
@@ -93,28 +93,44 @@ passengers = pd.read_csv('./data/titanic-data.csv')
 passengers.head()
 
 
-# 其中包含数据条数：
-
 # In[6]:
 
 
-passengers.PassengerId.count()
+passengers.info()
 
 
-# 总人数：
+# 共有数据 891 条，分别为 891 名乘客的信息，其中不包含重复数据。我们关注的三个因变量（Pclass、Sex、Age）中，Pclass 和 Sex 均不存在空值，对于 Age 为空值的记录，做丢弃处理。
 
 # In[7]:
 
 
-len(passengers.Name.unique())
+passengers.dropna(subset=['Age'], inplace=True)
 
 
-# 可见其中不包含原始数据。幸存者人数和遇难者人数统计如下：
+# 对于年龄数据中存在小数点的情况，将其向上取整。
 
-# In[34]:
+# In[8]:
 
 
-passengers.groupby('Survived').Survived.count()
+passengers.Age = passengers.Age.apply(np.ceil)
+
+
+# 幸存者人数和遇难者人数统计如下：
+
+# In[9]:
+
+
+passengers.groupby('Survived').PassengerId.count()
+
+
+# In[10]:
+
+
+def percent_and_count(percent):
+    return '%.2f%%(%d)' % (percent, int(percent / 100 * passengers.PassengerId.count()))
+
+pie = passengers.groupby('Survived').PassengerId.count().plot.pie(labels=['Dead', 'Survived'], autopct=percent_and_count);
+pie.axis('equal');
 
 
 # ## 分析数据
@@ -125,30 +141,31 @@ passengers.groupby('Survived').Survived.count()
 
 # 选择饼图展示，可以清晰的看出男性与女性乘客幸存的比例。
 
-# In[9]:
+# In[11]:
 
 
-pies = passengers.groupby(['Survived', 'Sex']).Survived.count().unstack().plot.pie(subplots=True);
-[p.axis('equal') for p in pies];
+passengers.groupby(['Sex', 'Survived']).Survived.count().unstack().plot.bar(stacked=True);
 
 
 # 从上图可以看出，在 Titanic 沉船事故中女性具有更高的幸存几率，幸存率分别为：
 
-# In[31]:
+# In[12]:
 
 
-passengers.groupby('Sex').Survived.mean()
+sex_axes = passengers.groupby('Sex').Survived.mean().plot.bar();
+for p in sex_axes.patches:
+    sex_axes.annotate('%.2f%%' % (p.get_height() * 100), (p.get_x() + p.get_width() / 2.5, p.get_height() * 1.01));
 
 
 # 使用 X^2 检验计算性别与幸存与否的相关性。
 
-# In[11]:
+# In[13]:
 
 
 frequency_table = pd.crosstab(passengers.Survived, passengers.Sex); frequency_table
 
 
-# In[12]:
+# In[14]:
 
 
 chi2,pval,dof,expected = stats.chi2_contingency(frequency_table)
@@ -160,25 +177,10 @@ print 'p-value: {}'.format(pval)
 
 # ## 2. 年龄对于幸存与否的影响
 
-# 提取幸存者的年龄数据，并将空数据丢弃。
-
-# In[ ]:
-
-
-survivors_age = survivors.Age.dropna()
-
-
-# 对于年龄数据中存在小数点的情况，将其向上取整。
-
-# In[14]:
-
-
-survivors_age = np.ceil(survivors_age)
-
-
 # In[15]:
 
 
+survivors_age = passengers[passengers.Survived == 1].Age
 survivors_age.describe()
 
 
@@ -227,12 +229,12 @@ print 'p-value: {}'.format(pval)
 
 # ## 3. Titanic 事件中是否存在“头等舱”妇孺优先的问题
 
-# 在 Titanic 的电影中，有一个情节是为了保证头等舱中有较高社会地位的乘客优先登上救生艇，船员们甚至临时关闭了下层夹板乘客通往船桥夹板的通道。这在我们的统计数据中也得到了验证，其中社会经济地位高或中等的乘客幸存的比例远远大于社会地位较低的乘客。
+# 在 Titanic 的电影中，有一个情节是为了保证头等舱中社会地位较高的乘客优先登上救生艇，船员们甚至临时关闭了下层夹板乘客通往船桥夹板的通道。这一现象在我们的统计数据中也得到了验证，社会经济地位高或中等的乘客的幸存比例远远高于社会地位较低的乘客。
 
 # In[20]:
 
 
-passengers.groupby(['Pclass', 'Survived']).Survived.count().unstack().plot.bar();
+passengers.groupby(['Pclass', 'Survived']).Survived.count().unstack().plot.bar(stacked=True);
 plt.ylabel('Count of Passengers');
 
 
@@ -260,7 +262,9 @@ print 'P-value: {}'.format(pval)
 
 # ## 结论
 
-# 可见，在 Titanic 沉船事故中，妇孺优先原则能够被比较好的遵守。但是遗憾的是，最终能否获救与他们所处的社会地位仍然有很大关系。
+# 在 Titanic 沉船事故中，妇孺优先原则能够被比较好的遵守。但是遗憾的是，最终能否获救与他们所处的社会地位仍然有很大关系。
+
+# 但是，由于使用的数据集仅包含其中 891 名乘客的信息，而实际 Titanic 在事故发生时共载有乘客 2224 名。如果我们使用的数据集无法充分代表 Titanic 上的全部乘客，那么依据这一数据样本得出的所有结论也都存在偏差。另外，在分析数据之前对 Age 为 NaN 的数据执行的数据清理也可能导致结论的偏差。因为，基于当前样本，无法判断没有登记年龄信息的乘客是随机分布的还是有着某些特殊规律。如果由于某种特殊原因，没有登记年龄信息的乘客均为儿童，那么基于年龄因素得出的结论就是存在偏差的。
 
 # ## References
 # 
