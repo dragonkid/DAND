@@ -1,0 +1,2 @@
+链接：https://mapzen.com/data/metro-extracts/metro/beijing_china/
+理由：北京是中国的政治和经济中心，也是我生活了三年的城市，其历史底蕴深厚、人文气息浓郁。希望可以通过整理北京的 OpenStreetMap 数据，从中找到我所不知道的好玩的地方。
